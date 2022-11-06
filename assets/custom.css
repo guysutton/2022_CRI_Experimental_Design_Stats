@@ -2,14 +2,14 @@
   font-size: 80px!important;
 }
 #title-slide .author:after {
-  content: url('../images/monash-stacked-blue-rgb.png') ;
+  content: url('../images/cbc_logo_full.png') ;
   display: block;
 
   /***
     display: block;
     content: "";
     height: 200px;
-    background: transparent url('../images/monash-one-line-black-rgb.png') no-repeat;
+    background: transparent url('../images/cbc_logo_full.png') no-repeat;
   
 
     ***/
