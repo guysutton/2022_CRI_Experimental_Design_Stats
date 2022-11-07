@@ -8,13 +8,13 @@ format:
     logo: images/cbc_logo_full.jpg
     # footer: "`emitanaka.org/slides/toronto2022`"
     slide-number: true
-    css: [assets/syntax-highlight.css, assets/custom.css, assets/pacman.css]
-    multiplex: true
-    controls: true
-    theme: [simple, assets/monash.scss]
-    header-includes: |
-      <link rel="stylesheet" href="/assets/fontawesome-free-6.1.1-web/css/font-awesome.min.css">
-      <script defer src="/assets/fontawesome-free-6.1.1-web/js/all.min.js"></script>
+    # css: [assets/syntax-highlight.css, assets/custom.css, assets/pacman.css]
+    # multiplex: true
+    # controls: true
+    # theme: [simple, assets/monash.scss]
+    # header-includes: |
+    #   <link rel="stylesheet" href="/assets/fontawesome-free-6.1.1-web/css/font-awesome.min.css">
+    #   <script defer src="/assets/fontawesome-free-6.1.1-web/js/all.min.js"></script>
 editor: source
 ---
 
@@ -229,6 +229,7 @@ also the cup!!!
 - One of the most common mistakes I see is researchers equating 'number of samples = no. of replicates/sample size'
   + [Number of samples usually DOES NOT equal sample size]{style="color:#cc0000"}
   + [Number of complete experimental units EQUALS sample size!!!]{style="color:#cc0000"}
+  + i.e. Sample size = number of times we are able to apply our full set of treatments
 
 - As such, we need to replicate the experiment based on experimental units, not sample units. 
 :::
@@ -271,7 +272,51 @@ No. of sampling units:
 
 ::: {.absolute top="70%" left="70%"}
 ::: {style="color: #66b2ff"}
-60 (30 per treatment)
+40 (20 per treatment)
+:::
+:::
+
+---
+
+---
+
+## Sample size - Example 2
+
+::: {.absolute top="10%" left="0" width="800" height="500"}
+![](images/figure_exp_design_2.png)
+:::
+
+. . .
+
+. . .
+
+::: {.absolute top="25%" left="45%"}
+::: {style="color: #cc0000"}
+No. of experimental units:
+:::
+:::
+
+. . .
+
+::: {.absolute top="25%" left="87%"}
+::: {style="color: #cc0000"}
+10
+:::
+:::
+
+. . .
+
+::: {.absolute top="35%" left="45%"}
+::: {style="color: #66b2ff"}
+No. of sampling units: 
+:::
+:::
+
+. . .
+
+::: {.absolute top="35%" left="80%"}
+::: {style="color: #66b2ff"}
+20 <br>(10 per treatment)
 :::
 :::
 

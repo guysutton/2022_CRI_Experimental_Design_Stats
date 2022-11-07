@@ -25,9 +25,6 @@
     ul.task-list{list-style: none;}
   </style>
   <link rel="stylesheet" href="01_experimental_design_files/libs/revealjs/dist/theme/quarto.css" id="theme">
-  <link rel="stylesheet" href="assets/syntax-highlight.css">
-  <link rel="stylesheet" href="assets/custom.css">
-  <link rel="stylesheet" href="assets/pacman.css">
   <link href="01_experimental_design_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="01_experimental_design_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="01_experimental_design_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -316,8 +313,6 @@
       margin-right: 0; 
     }
   </style>
-  <link rel="stylesheet" href="/assets/fontawesome-free-6.1.1-web/css/font-awesome.min.css">
-  <script defer="" src="/assets/fontawesome-free-6.1.1-web/js/all.min.js"></script>
 </head>
 <body class="quarto-light">
   <div class="reveal">
@@ -530,6 +525,7 @@
 <ul>
 <li class="fragment"><span style="color:#cc0000">Number of samples usually DOES NOT equal sample size</span></li>
 <li class="fragment"><span style="color:#cc0000">Number of complete experimental units EQUALS sample size!!!</span></li>
+<li class="fragment">i.e.&nbsp;Sample size = number of times we are able to apply our full set of treatments</li>
 </ul></li>
 <li class="fragment">As such, we need to replicate the experiment based on experimental units, not sample units.</li>
 </ul>
@@ -564,7 +560,44 @@
 <div class="fragment">
 <div class="absolute" style="top: 70%; left: 70%; ">
 <div style="color: #66b2ff">
-<p>60 (30 per treatment)</p>
+<p>40 (20 per treatment)</p>
+</div>
+</div>
+</div>
+</section>
+<section class="slide level2">
+
+</section>
+<section id="sample-size---example-2" class="slide level2">
+<h2>Sample size - Example 2</h2>
+<div class="absolute" style="top: 10%; left: 0px; width: 800px; height: 500px; ">
+<p><img data-src="images/figure_exp_design_2.png"></p>
+</div>
+<div class="fragment">
+<div class="absolute" style="top: 25%; left: 45%; ">
+<div style="color: #cc0000">
+<p>No.&nbsp;of experimental units:</p>
+</div>
+</div>
+</div>
+<div class="fragment">
+<div class="absolute" style="top: 25%; left: 87%; ">
+<div style="color: #cc0000">
+<p>10</p>
+</div>
+</div>
+</div>
+<div class="fragment">
+<div class="absolute" style="top: 35%; left: 45%; ">
+<div style="color: #66b2ff">
+<p>No.&nbsp;of sampling units:</p>
+</div>
+</div>
+</div>
+<div class="fragment">
+<div class="absolute" style="top: 35%; left: 80%; ">
+<div style="color: #66b2ff">
+<p>20 <br>(10 per treatment)</p>
 </div>
 </div>
 <p><img src="images/cbc_logo_full.jpg" class="slide-logo"></p>
@@ -583,8 +616,6 @@
   <script src="01_experimental_design_files/libs/revealjs/plugin/pdf-export/pdfexport.js"></script>
   <script src="01_experimental_design_files/libs/revealjs/plugin/reveal-menu/menu.js"></script>
   <script src="01_experimental_design_files/libs/revealjs/plugin/reveal-menu/quarto-menu.js"></script>
-  <script src="01_experimental_design_files/libs/revealjs/plugin/multiplex/socket.io.js"></script>
-  <script src="01_experimental_design_files/libs/revealjs/plugin/multiplex/multiplex.js"></script>
   <script src="01_experimental_design_files/libs/revealjs/plugin/quarto-support/support.js"></script>
   
 
@@ -599,7 +630,7 @@
       // Full list of configuration options available at:
       // https://revealjs.com/config/
       Reveal.initialize({
-'controlsAuto': false,
+'controlsAuto': true,
 'previewLinksAuto': false,
 'smaller': false,
 'pdfSeparateFragments': false,
@@ -607,11 +638,10 @@
 'autoAnimateDuration': 1,
 'autoAnimateUnmatched': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
-'multiplex': {"secret":null,"id":"0dcf375bb3d67ab6","url":"https://reveal-multiplex.glitch.me/"},
 'smaller': false,
  
         // Display controls in the bottom right corner
-        controls: true,
+        controls: false,
 
         // Help the user learn the controls by providing hints, for example by
         // bouncing the down arrow when they first encounter a vertical slide
@@ -781,7 +811,7 @@
         plugins: [QuartoLineHighlight, PdfExport, RevealMenu, QuartoSupport,
 
           RevealMath,
-          
+          RevealNotes,
           RevealSearch,
           RevealZoom
         ]
