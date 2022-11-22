@@ -1,0 +1,705 @@
+---
+title: "Session #2: Data Processing"
+author: "Guy F. Sutton"
+institute: "Centre for Biological Control<br>Rhodes University, South Africa<Br>Email: g.sutton@ru.ac.za"
+format: 
+  revealjs:
+    # incremental: true
+    logo: images/cbc_logo_full.jpg
+    # footer: "`emitanaka.org/slides/toronto2022`"
+    slide-number: true
+    chalkboard: 
+      boardmarker-width: 5
+    # css: [assets/syntax-highlight.css, assets/custom.css, assets/pacman.css]
+    # multiplex: true
+    # controls: true
+    # theme: [simple, assets/monash.scss]
+    # header-includes: |
+    #   <link rel="stylesheet" href="/assets/fontawesome-free-6.1.1-web/css/font-awesome.min.css">
+    #   <script defer src="/assets/fontawesome-free-6.1.1-web/js/all.min.js"></script>
+editor: source
+---
+
+## Data processing 
+
+::: {.incremental}
+- Most ecological datasets are messy. They are poorly organised, inconsistent and often aren't in the format that we require for our analysis.
+  + A famous quote in the world of data analysis alludes to the fact that 90% of data analysis is cleaning and processing the data, and 10% is actually performing the analysis. 
+:::
+
+---
+
+## Data processing 
+
+::: {.incremental}
+- In this session, our goal is to expand our skill sets for working with data. 
+  + Broadly speaking, subsetting, transforming, and processing data is called *data cleaning*. 
+  + Here, we'll emphasise functions from the **tidyverse** package for data cleaning and pre-processing.
+:::
+
+---
+
+## Packages and data
+
+Let's load the `tidyverse` and `palmerpenguins` packages. 
+
+```{r}
+#| echo: true
+#| output: false
+
+# Use package manager to check, install and load required packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  # List the packages you need below
+  tidyverse,
+  palmerpenguins
+)
+```
+
+
+```{r}
+#| echo: false
+
+# Remove the rows withing missing (NA) data 
+penguins <- penguins %>%
+  tidyr::drop_na()
+```
+
+---
+
+## Key functions 
+
+::: {.fragment .semi-fade-out}
+
+- 1. `dplyr::filter` keeps or discards rows (aka observations)
+
+- 2. `dplyr::select` keeps or discards columns (aka variables)
+
+- 3. `dplyr::mutate` creates or replaces columns 
+
+- 4. `dplyr::group_by`/`dplyr::summarize` aggregates data ([pivot tables]{style="color:#cc0000"}!)
+
+:::
+
+---
+
+## General syntax of a function
+
+Option 1: 
+
+<br> 
+
+`package_name::function(data, argument(s))`
+
+<br>
+
+. . .
+
+E.g. If we want to keep only the rows in `penguins` where the penguin `species` is *Adelie*. 
+
+. . .
+
+  + `dplyr::filter(penguins, species == "Adelie")`
+
+---
+
+## General syntax of a function
+
+Option 2: Using the `magittr` pipe (%>%)
+
+<br> 
+
+`data %>% package_name::function(argument(s))`
+
+<br> 
+
+. . . 
+
+E.g. If we want to keep only the rows in `penguins` where the penguin `species` is *Adelie*. 
+
+. . .
+
+  + `penguins %>% dplyr::filter(species == "Adelie")`
+
+---
+
+## `magittr` pipe 
+
+The pipe operator allows us to chain multiple operations into one piece of code. 
+
+::: {.incremental}
+- If your **R** code is like a sentence, the pipe operator (`%>%`) is like the phrase "*and then*". 
+  + The pipe takes the output from the first operation and feeds it into the next operation. 
+  + The RStudio shortcuts are:
+    + `Ctrl + Shift + M` (Windows)
+    + `Cmd + Shift + M` (Mac)
+:::
+
+---
+
+## `magittr` pipe
+
+Let's return to our previous example, where we want to keep only the rows in `penguins` where the penguin `species` is *Adelie*, but we now want to also only keep `female` penguins. 
+
+<br> 
+
+::: {.incremental}
+- If we did this using option 1, we need two lines of code:
+
+  + `data <- dplyr::filter(penguins, species == "Adelie")`
+  + `data <- dplyr::filter(penguins, sex == "female")`
+::: 
+
+---
+
+## `magittr` pipe
+
+Let's return to our previous example, where we want to keep only the rows in `penguins` where the penguin `species` is *Adelie*, but we now want to also only keep `female` penguins. 
+
+<br> 
+
+::: {.incremental}
+- If we use the `pipe`:
+  
+  + `penguins %>% dplyr::filter(species == "Adelie" & sex == "female")`
+  
+::: 
+
+---
+
+## `magittr` pipe
+
+If we break this operation down:
+
+::: {.incremental}
+- `penguins %>% dplyr::filter(species == "Adelie" & sex == "female")`
+  + Take the `penguins` data, [and then]{style="color:#0000FF"} 
+  + Apply the `dplyr::filter` function:
+      + Keeping only the rows where `species == "Adelie"` and `sex == "female"`
+      
+:::
+      
+---
+
+## `dplyr::filter`
+
+This function keeps or discards rows from our data that meet some condition. 
+
+. . .
+
+- The `==` operator tests for equality 
+
+  + For example, keep rows for penguins that come from `Torgersen` island only. 
+
+. . . 
+
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::filter(island == "Torgersen")
+```
+
+---
+
+## `dplyr::filter`
+
+- The `|` operator signifies *or* 
+
+  + For example, keep rows for penguins that come from `Torgersen` *or* `Biscoe` island. 
+
+. . .
+
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::filter(island == "Torgersen" | island == "Biscoe")
+```
+
+
+---
+
+## `dplyr::filter`
+
+- The `%in%` operator allows us to specify a list of items we want
+
+  + For example, keep rows for penguins that come from `Torgersen` and `Biscoe` island. 
+
+. . .
+
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::filter(island %in% c("Torgersen", "Biscoe"))
+```
+
+---
+
+
+## `dplyr::filter`
+
+- The `&` operator allows us combine conditions
+
+  + For example, keep rows for penguins only `Adelie` penguins that come from `Torgersen` island.
+
+. . .
+
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::filter(species == "Adelie" & island == c("Torgersen"))
+```
+
+
+---
+
+## `dplyr::select`
+
+::: {.incremental}
+This function keeps or discards columns from our data 
+  + For example, keep only the `species` column
+:::
+
+. . .
+
+::: columns
+::: {.column width="50%"}
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::select(species)
+```
+:::
+
+::: {.column width="50%"}
+::: {.fragment}
+<!-- ::: {style="font-size: 0.45em"} -->
+```{r}
+#| echo: false
+#| output: true
+penguins %>%
+  dplyr::select(species) %>%
+  head(6)
+```
+:::
+:::
+:::
+
+---
+
+## `dplyr::select`
+
+::: {.incremental}
+- We can select multiple columns at the same time 
+  + For example, keep the `species`, `island` and `year` columns
+:::
+
+. . .
+
+::: columns
+::: {.column width="50%"}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::select(species, island, year)
+```
+:::
+:::
+
+::: {.column width="50%"}
+::: {.fragment}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: false
+#| output: true
+penguins %>%
+  dplyr::select(species, island, year) %>%
+  head(6)
+```
+:::
+:::
+:::
+:::
+
+---
+
+## `dplyr::select`
+
+::: {.incremental}
+- We can also drop/deselect columns using the `-` syntax
+  + For example, let's drop/remove the `species` column
+:::
+
+. . .
+
+::: columns
+::: {.column width="35%"}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::select(-species)
+```
+:::
+:::
+
+::: {.column width="65%"}
+::: {.fragment}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: false
+#| output: true
+penguins %>%
+  dplyr::select(-species) %>%
+  head(6)
+```
+:::
+:::
+:::
+:::
+
+---
+
+## `dplyr::select`
+
+::: {.incremental}
+- We can also drop/deselect multiple columns using the `-` syntax, but we need to pass a vector of columns name using `c(column_name, column_name)`
+  + For example, let's drop/remove the `species` and `island` columns
+:::
+
+. . .
+
+::: columns
+::: {.column width="50%"}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::select(-c(species, island))
+```
+:::
+:::
+
+::: {.column width="50%"}
+::: {.fragment}
+::: {style="font-size: 0.65em"} 
+```{r}
+#| echo: false
+#| output: true
+penguins %>%
+  dplyr::select(-c(species, island)) %>%
+  head(6)
+```
+:::
+:::
+:::
+:::
+
+---
+
+## `dplyr::mutate` 
+
+- This function allows us to either add a new column, or apply some function to an existing column. 
+
+:::{.incremental}
+1. If we give `dplyr::mutate` a new column name (i.e. a column name that isn't in the existing dataset), it will create a new column. 
+
+2. If we `dplyr::mutate` an existing column name, it will replace the existing column
+
+:::
+
+--- 
+
+## `dplyr::mutate` 
+
+::: {.incremental}
+- Let's add new column containing the ratio between `body_mass_g` and `flipper_length_mm`
+:::
+
+. . . 
+
+```{r}
+#| echo: true
+#| output: true
+
+penguins %>%
+  dplyr::mutate(ratio_mass_length = body_mass_g / flipper_length_mm)
+```
+
+---
+
+### `dplyr::mutate` 
+
+- Let's update the existing `year` column by adding 10 years to each value. 
+
+. . . 
+
+```{r}
+#| echo: true
+#| output: true
+
+penguins %>%
+  dplyr::mutate(year = year + 10) 
+```
+
+--- 
+
+### `dplyr::group_by`/`dplyr::summarize`
+
+::: {.incremental}
+- This allows us to group the data by some variable(s), and then apply a function by-group. 
+- The most common use is to calculate summary statistics for different groups (i.e. calculate a mean and variance for different groups). 
+:::
+  
+---
+
+### `dplyr::group_by`/`dplyr::summarize`
+
+- For example, let's calculate the mean body mass (`body_mass_g`) for the different penguin species. 
+  
+. . . 
+
+::: columns
+::: {.column width="50%"}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::group_by(species) %>%
+  dplyr::summarise(
+    mean_body_mass_g = mean(body_mass_g)
+  )
+```
+:::
+:::
+
+::: {.column width="50%"}
+::: {.fragment}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: false
+#| output: true
+
+penguins %>%
+  dplyr::group_by(species) %>%
+  dplyr::summarise(
+    mean_body_mass_g = mean(body_mass_g, na.rm = T)
+  )
+```
+:::
+:::
+:::
+:::
+
+---
+
+
+### `dplyr::group_by`/`dplyr::summarize`
+
+::: {.incremental}
+- We can apply functions for multiple groups/variables at once
+  + For example, let's calculate the mean body mass (`body_mass_g`) for the different penguin species and for male/female penguins. 
+:::
+
+. . . 
+
+::: columns
+::: {.column width="50%"}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::group_by(species, sex) %>%
+  dplyr::summarise(
+    mean_body_mass_g = mean(body_mass_g)
+  )
+```
+:::
+:::
+
+::: {.column width="50%"}
+::: {.fragment}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: false
+#| output: true
+#| code-block-border-left: true
+#| code-block-border-bottom: true
+
+penguins %>%
+  dplyr::group_by(species, sex) %>%
+  dplyr::summarise(
+    mean_body_mass_g = mean(body_mass_g)
+  )
+```
+:::
+:::
+:::
+:::
+
+---
+
+### `dplyr::group_by`/`dplyr::summarize`
+
+:::{ .incremental}
+- We can also calculate multiple summary statistics at once
+  + For example, let's calculate the mean and maximum body mass (`body_mass_g`) for the different penguin species and for male/female penguins. 
+:::
+
+. . . 
+
+::: columns
+::: {.column width="50%"}
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: false
+
+penguins %>%
+  dplyr::group_by(species, sex) %>%
+  dplyr::summarise(
+    mean_body_mass_g = mean(body_mass_g),
+    max_body_mass_g = max(body_mass_g)
+  )
+```
+:::
+:::
+
+
+::: {.column width="50%"}
+::: {.fragment}
+::: {style="font-size: 0.65em"} 
+```{r}
+#| echo: false
+#| output: true
+
+penguins %>%
+  dplyr::group_by(species, sex) %>%
+  dplyr::summarise(
+    mean_body_mass_g = mean(body_mass_g),
+    max_body_mass_g = max(body_mass_g)
+  )
+```
+:::
+:::
+:::
+:::
+
+---
+
+## Converting column/variable types 
+
+::: {.incremental}
+- `R` stores data in columns primarily as factors `<fct>`, characters `<chr>`, logical `<lgl>`, numeric/double `<dbl>`, integers `<int>`, and dates `<date>` types. 
+  + However, it often imports the data as the wrong type, or the analysis we are trying to use requires the data as a specific type. 
+  + We often have to convert columns between types, notably converting between `<fct>` and `<chr>`, and `<chr>` and `<dbl>`/`<int>`. 
+:::
+
+---
+
+## Converting column/variable types 
+
+We can check the types in each column using `head()`
+
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: true
+
+head(penguins)
+```
+:::
+
+---
+
+## Converting column/variable types 
+
+We can check the types in each column using `dplyr::glimpse()`
+
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: true
+
+dplyr::glimpse(penguins)
+```
+:::
+
+---
+
+## Converting column/variable types 
+
+How do we change the `species` column from a `<fct>` to a `<chr>`? 
+
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: true
+
+penguins %>%
+  dplyr::mutate(species = as.character(species))
+```
+:::
+
+---
+
+## Converting column/variable types 
+
+We can change multiple variable types at the same time. 
+
+::: {style="font-size: 0.85em"} 
+```{r}
+#| echo: true
+#| output: true
+
+penguins %>%
+  dplyr::mutate(species = as.character(species),
+                bill_depth_mm = as.numeric(bill_depth_mm))
+```
+:::
+
+---
+
+## Exercise 
+
+::: {.incremental}
+- Time for you to best your skills out. 
+  + Open the script `02_ex_data_processing.R` on your PC. 
+  + Run the code that is already there and then answer the questions. 
+:::
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

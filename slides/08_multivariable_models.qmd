@@ -1,0 +1,758 @@
+---
+title: "Session #10: Multivariable models"
+author: "Guy F. Sutton"
+institute: "Centre for Biological Control<br>Rhodes University, South Africa<Br>Email: g.sutton@ru.ac.za"
+format: 
+  revealjs:
+    # incremental: true
+    logo: images/cbc_logo_full.jpg
+    # footer: "`emitanaka.org/slides/toronto2022`"
+    slide-number: true
+    cache: true
+    chalkboard: 
+      boardmarker-width: 5
+    # css: [assets/syntax-highlight.css, assets/custom.css, assets/pacman.css]
+    # multiplex: true
+    # controls: true
+    # theme: [simple, assets/monash.scss]
+    # header-includes: |
+    #   <link rel="stylesheet" href="/assets/fontawesome-free-6.1.1-web/css/font-awesome.min.css">
+    #   <script defer src="/assets/fontawesome-free-6.1.1-web/js/all.min.js"></script>
+editor: source
+---
+
+```{r}
+#| echo: false
+#| eval: true
+
+################
+# Session setup 
+################
+
+# Use package manager to check, install and load required packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  # List the packages you need below
+  tidyverse,
+  ISLR,
+  moderndive
+)
+
+# Change ggplot theme
+theme_set(
+  theme_classic() +
+    theme(
+      panel.border = element_rect(colour = "black",
+                                  fill = NA),
+      axis.text = element_text(colour = "black"),
+      axis.title.x = element_text(margin = unit(c(2, 0, 0, 0),
+                                                "mm")),
+      axis.title.y = element_text(margin = unit(c(0, 4, 0, 0),
+                                                "mm")),
+      legend.position = "none"
+    )
+)
+```
+
+## Multivariable models 
+
+::: {.incremental}
+- In this course, we have only dealt with models with a single predictor or `x` variable. 
+  + However, we can fit models with multiple predictor variables (e.g. 2 or more predictors).
+  + These types of models are often called *multiple regression*. 
+:::
+
+---
+
+## Example 
+
+::: {style="font-size: 0.80em"}
+- For example, let's consider a study that looks at FCM body mass (`fcm_mass`), and whether it is effected by fruit diameter (`fruit_diam`) and the variety of fruit sampled (`fruit_variety`)
+:::
+  
+```{r}
+#| echo: false
+#| eval: true
+
+data <- evals %>%
+  dplyr::select(
+    ID,
+    fcm_mass = score,
+    fruit_diam = age,
+    fruit_tannins = bty_avg,
+    fruit_variety = gender
+  ) %>%
+  dplyr::mutate(fruit_variety = dplyr::if_else(fruit_variety == "female", "A", "B"),
+                fruit_tannins = as.numeric(fruit_tannins))
+```
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 4
+
+plot_diam <- data %>% 
+  ggplot(aes(x = fruit_diam, y = fcm_mass)) +
+  geom_jitter(width = 0.1, height = 0.05) +
+  geom_smooth(method = "lm") +
+  labs(x = "Fruit diameter", 
+       y = "FCM body mass")
+
+plot_variety <- data %>% 
+  ggplot(aes(x = fruit_variety, y = fcm_mass)) +
+  geom_boxplot() +
+  labs(y = "FCM body mass")
+
+cowplot::plot_grid(plot_diam, plot_variety, nrow = 1)
+```
+
+---
+
+## Additive model 
+
+::: {.incremental}
+- The first and most simple model we can fit to multivariable data is an additive model
+  + This can take the form of a Gaussian, Poisson, NB, probit, or other GLM based on the type of data
+  + The **additive** name comes from the fact that we want to know the effect of both `x1` and `x2`
+    + This model simply sums the individual effects of `x1` and `x2`
+    + I.e. The effect of `x1` on `y` does not depend on the value of `x2`, and *vice-versa* 
+:::
+
+---
+
+## Fit an additive Gaussian GLM 
+
+::: {.incremental}
+::: {style="font-size: 0.80em"}
+- Returning to our example of FCM body mass (`fcm_mass`), and whether it is effected by fruit diameter (`fruit_diam`) and the variety of fruit sampled (`fruit_variety`)
+  + The additive model asks whether `fcm_mass` is effected by fruit diameter (`fruit_diam`), independent of the value of `fruit_variety`, and the variety of fruit sampled (`fruit_variety`), independent of the value of `fruit_diameter`
+  + We fit an additive model using the syntax: `y ~ x1 + x2`
+:::
+:::
+
+. . . 
+
+```{r}
+#| echo: true
+#| eval: true
+
+mod_add <- glm(fcm_mass ~ fruit_diam + fruit_variety, 
+               data = data, 
+               family = gaussian(link = "identity"))
+```
+
+---
+
+## Hypothesis tests
+
+::: {.incremental}
+- When we have multivariable models, it is easiest to assess statistical significance using `Wald's Tests`
+  + These are asymptotically the same as the Likelihood Ratio Tests (LRT's) we have been using so far
+:::
+. . . 
+
+```{r}
+#| echo: true
+#| eval: true
+
+car::Anova(mod_add, test = "Wald")
+```
+
+--- 
+
+## Interpreting Wald's test 
+
+```{r}
+#| echo: false
+#| eval: true
+
+car::Anova(mod_add, test = "Wald")
+```
+
+. . . 
+
+::: {.incremental}
+::: {style="font-size: 0.75em"}
+- There is evidence for a significant effect of `fruit_variety` on FCM body mass (X2 = 13.19, df = 1, *P* < 0.001), and there is evidence for an effect of `fruit_diameter` on FCM body mass (X2 = 10.78, df = 1, *P* = 0.001). 
+  + The key point here is that **the effect of each predictor variable is assumed to be consistent across the other predictor variable levels/values**
+  + E.g. The relationship between `fruit_diameter` and FCM body mass is assumed to be the same across both fruit varieties 
+:::
+:::
+
+---
+
+## Plot additive model
+
+::: {.panel-tabset}
+
+### Plot
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 5
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_add,
+    terms = c("fruit_diam", "fruit_variety"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_variety = group)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted, 
+                       colour = fruit_variety, 
+                       fill = fruit_variety)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+```
+
+### Code
+
+```{r}
+#| echo: true
+#| eval: false
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 5
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_add,
+    terms = c("fruit_diam", "fruit_variety"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_variety = group)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted, 
+                       colour = fruit_variety, 
+                       fill = fruit_variety)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+```
+
+:::
+
+---
+
+## Interaction model 
+
+::: {.incremental}
+- The second type of model we can fit is an *interaction model*
+  + Again, this can take the form of a Gaussian, Poisson, NB, probit, or other GLM based on the type of data
+  + The **interaction** name comes from the fact that we want to know the effect of both `x1` and `x2`, however, we allow the effects of the predictor variables to vary with one another 
+    + I.e. The effect of `x1` on `y` depends on the value of `x2`, and *vice-versa* 
+:::
+
+---
+
+## Fit an interaction Gaussian GLM 
+
+::: {.incremental}
+::: {style="font-size: 0.75em"}
+- Returning to our example of FCM body mass (`fcm_mass`), and whether it is effected by fruit diameter (`fruit_diam`) and the variety of fruit sampled (`fruit_variety`)
+  + The interaction model asks whether `fcm_mass` is effected by fruit diameter (`fruit_diam`) and the variety of fruit sampled (`fruit_variety`), and whether the effect of `fruit_diameter` depends on the `fruit_variety`, or *vice-versa*
+  + We fit an interaction model using the syntax: `y ~ x1 + x2 + x1:x2` (recommended)
+  + We can also fit an interaction model using the syntax: `y ~ x1 * x2` (not recommended)
+:::
+:::
+
+. . .
+
+```{r}
+#| echo: true
+#| eval: true
+
+mod_int <- glm(fcm_mass ~ fruit_diam + fruit_variety + fruit_diam:fruit_variety, 
+               data = data, 
+               family = gaussian(link = "identity"))
+```
+
+---
+
+## Interpreting Wald's test 
+
+```{r}
+#| echo: true
+#| eval: true
+
+car::Anova(mod_int, test = "Wald")
+```
+
+. . . 
+
+::: {.incremental}
+::: {style="font-size: 0.75em"}
+- There is evidence for a significant interaction between `fruit_diam` and `fruit_variety` (X2 = 5.98, df = 1, *P* = 0.014). 
+  + This tells us that the effect of `fruit_diam` on FCM body mass differs between the two fruit varieties 
+  + The key point here is that **the effect of each predictor variable is allowed to vary across the other predictor variable levels/values**
+:::
+:::
+
+--- 
+
+## Plot interaction model
+
+::: {.panel-tabset}
+
+### Plot
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 5
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_int,
+    terms = c("fruit_diam", "fruit_variety"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_variety = group)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted, 
+                       colour = fruit_variety, 
+                       fill = fruit_variety)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+```
+
+### Code
+
+```{r}
+#| echo: true
+#| eval: false
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 5
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_int,
+    terms = c("fruit_diam", "fruit_variety"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_variety = group)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted, 
+                       colour = fruit_variety, 
+                       fill = fruit_variety)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+```
+
+:::
+
+---
+
+## Interpreting model coefficients 
+
+
+```{r}
+#| echo: false
+#| eval: true
+
+car::Anova(mod_int, test = "Wald")
+```
+
+. . . 
+
+::: {.incremental}
+::: {style="font-size: 0.65em"}
+- When there are significant interaction terms in your model, you **MUST NOT** interpret the lower-order terms in your model (e.g. `x1` and `x2`)
+  + In the presence of an interaction term, these comparisons are usually not valid or of any interest
+  + e.g. In our interaction model, the row reporting the `fruit_variety` result indicates a significant effect of `fruit variety` on FCM mass.
+    + However, because of the interaction term, this comparison is a conditional effect where `fruit_diam` is equal to 0
+    + It is nonsense to report this result, it doesn't make sense! 
+:::
+:::
+
+---
+
+## Models with two continous predictors 
+
+::: {style="font-size: 0.80em"}
+- Multivariable models with two, or more, continuous variables are more tricky
+  + For example, let's consider a study that looks at FCM body mass (`fcm_mass`), and whether it is effected by fruit diameter (`fruit_diam`) and the concentration of fruit tannins (`fruit_tannins`) 
+:::
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 4
+
+plot_diam <- data %>% 
+  ggplot(aes(x = fruit_diam, y = fcm_mass)) +
+  geom_jitter(width = 0.1, height = 0.05) +
+  geom_smooth(method = "lm") +
+  labs(x = "Fruit diameter", 
+       y = "FCM body mass")
+
+plot_tannins <- data %>% 
+  ggplot(aes(x = fruit_tannins, y = fcm_mass)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(x = "Fruit tannin concentration",
+       y = "FCM body mass")
+
+cowplot::plot_grid(plot_diam, plot_tannins, nrow = 1)
+```
+
+---
+
+## Fit an additive Gaussian GLM 
+
+- The additive model asks whether `fcm_mass` is effected by fruit diameter (`fruit_diam`), independent of the value of `fruit_tannins`, and the concentration of fruit tannins (`fruit_tannins`), independent of the value of `fruit_diameter`
+
+```{r}
+#| echo: true
+#| eval: true
+
+mod_add <- glm(fcm_mass ~ fruit_diam + fruit_tannins, 
+               data = data, 
+               family = gaussian(link = "identity"))
+```
+
+---
+
+## Plot additive model
+
+::: {style="font-size: 0.60em"}
+Because both predictors are continuous, we typically plot the predictions for `x1` at the mean value for `x2` and vice-versa, or a range of values for `x2`
+:::
+
+::: {.panel-tabset}
+
+### Plot
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 4
+
+# Extract predictions for fruit diameter
+preds <-
+  ggeffects::ggpredict(
+    mod_add,
+    terms = c("fruit_diam", "fruit_tannins [mean]"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_tannins = group) %>%
+  dplyr::mutate(fruit_diam = parse_double(as.character(fruit_diam)))
+
+# Make plot for fruit diameter
+plot_diam <- preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+
+# Extract predictions for fruit_tannin
+preds <-
+  ggeffects::ggpredict(
+    mod_add,
+    terms = c("fruit_diam [mean]", "fruit_tannins [0:7 by=0.1]"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_tannins = group) %>%
+  dplyr::mutate(fruit_tannins = parse_double(as.character(fruit_tannins)))
+
+
+# Make plot for fruit_tannin
+plot_tannins <- preds %>%
+  ggplot(data = ., aes(x = fruit_tannins, 
+                       y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit tannins",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+
+# Put plots together 
+cowplot::plot_grid(plot_diam, plot_tannins, nrow = 1)
+```
+
+### Code
+
+```{r}
+#| echo: true
+#| eval: false
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 4
+
+
+# Extract predictions for fruit diameter
+preds <-
+  ggeffects::ggpredict(
+    mod_add,
+    terms = c("fruit_diam", "fruit_tannins [mean]"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_tannins = group) %>%
+  dplyr::mutate(fruit_diam = parse_double(as.character(fruit_diam)))
+
+# Make plot for fruit diameter
+plot_diam <- preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+
+# Extract predictions for fruit_tannin
+preds <-
+  ggeffects::ggpredict(
+    mod_add,
+    terms = c("fruit_diam [mean]", "fruit_tannins [0:7 by=0.1]"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_tannins = group) %>%
+  dplyr::mutate(fruit_tannins = parse_double(as.character(fruit_tannins)))
+
+
+# Make plot for fruit_tannin
+plot_tannins <- preds %>%
+  ggplot(data = ., aes(x = fruit_tannins, 
+                       y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit tannins",
+    y = "FCM body mass"
+  ) + 
+  theme(legend.position = "right")
+
+# Put plots together 
+cowplot::plot_grid(plot_diam, plot_tannins, nrow = 1)
+```
+
+:::
+
+---
+
+
+## Fit an interaction Gaussian GLM 
+
+- The interaction model asks whether `fcm_mass` is effected by fruit diameter (`fruit_diam`) and/or `fruit_tannins`, and whether the effect of fruit diameter (`fruit_diam`) is dependent on fruit tannin (`fruit_tannins`), or *vice-versa* 
+
+```{r}
+#| echo: false
+#| eval: true
+
+mod_int <- glm(fcm_mass ~ fruit_diam + fruit_tannins + fruit_diam:fruit_tannins, 
+               data = data, 
+               family = gaussian(link = "identity"))
+```
+
+---
+
+
+## Plot interaction model
+
+::: {.incremental}
+::: {style="font-size: 0.60em"}
+- Because both predictors are continuous, we typically plot the predictions for `x1` at the mean value for `x2` and vice-versa, or a range of values for `x2`
+  + In this example, we plot the effect of `fruit_diameter` at the mean, mean + 1sd and mean - 1sd of `fruit-tannins`
+:::
+:::
+
+. . . 
+
+::: {.panel-tabset}
+
+### Plot
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 4
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_int,
+    terms = c("fruit_diam", "fruit_tannins [meansd]"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_tannins = group) %>%
+  dplyr::mutate(fruit_tannins = as.factor(fruit_tannins)) %>%
+  dplyr::mutate(fruit_tannins = dplyr::case_when(
+    fruit_tannins == "2.89" ~ "Mean - 1sd",
+    fruit_tannins == "4.42" ~ "Mean",
+    fruit_tannins == "5.95" ~ "Mean + 1sd"
+  ))
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted,
+                       fill = fruit_tannins)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  facet_wrap(~ fruit_tannins, nrow = 1) + 
+  theme(legend.position = "right")
+```
+
+### Code
+
+```{r}
+#| echo: true
+#| eval: false
+#| fig-align: center 
+#| fig-width: 10  
+#| fig-height: 4
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_int,
+    terms = c("fruit_diam", "fruit_tannins [meansd]"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(fruit_diam = x,
+                fruit_tannins = group) %>%
+  dplyr::mutate(fruit_tannins = as.factor(fruit_tannins)) %>%
+  dplyr::mutate(fruit_tannins = dplyr::case_when(
+    fruit_tannins == "2.89" ~ "Mean - 1sd",
+    fruit_tannins == "4.42" ~ "Mean",
+    fruit_tannins == "5.95" ~ "Mean + 1sd"
+  ))
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = fruit_diam, 
+                       y = predicted,
+                       fill = fruit_tannins)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+                    alpha = 0.4) +
+  labs(
+    x = "Fruit diameter",
+    y = "FCM body mass"
+  ) + 
+  facet_wrap(~ fruit_tannins, nrow = 1) + 
+  theme(legend.position = "right")
+```
+
+:::
+
+---
+
+
+
+
+
+
+

@@ -1,0 +1,153 @@
+---
+title: "Answers for exercise for session #2 - Data Processing"
+author: "Guy F. Sutton"
+institute: "Centre for Biological Control<br>Rhodes University, South Africa<Br>Email: g.sutton@ru.ac.za"
+format: pdf
+editor: visual
+---
+
+# Exercise #2 answers 
+
+```{r}
+#| echo: true
+#| eval: true
+#| warning: false
+
+# -----------------------------------------------------------------------------
+# Session setup
+# -----------------------------------------------------------------------------
+
+# Load required packages
+if (!require("pacman"))
+  install.packages("pacman")
+pacman::p_load(
+  tidyverse,
+  tidyr
+)
+
+# Simulate some fake data 
+data <- tribble(
+  ~ "treatment", ~ "x1", ~ "x2", 
+  "Control", 0, 7,
+  "Control", 3, 2,
+  "Control", 9, 1, 
+  "Control", 11, 9,
+  "Control", 7, 12,
+  "Treatment", 0, 1,
+  "Treatment", 5, 11,
+  "Treatment", 3, 13,
+  "Treatment", 27, 5,
+  "Treatment", 19, 7
+) %>%
+  dplyr::mutate(x1 = as.character(x1))
+print(data)
+```
+
+\pagebreak 
+
+### Exercise #1: Convert the column `x1` from a character into a integer variable 
+
+```{r exercise_1}
+#| echo: true
+
+data %>%
+  dplyr::mutate(x1 = as.integer(x1))
+```
+
+\pagebreak 
+
+### Exercise #2: Convert the `treatment` column from a character into a factor variable 
+
+```{r exercise_2}
+#| echo: true
+
+data %>%
+  dplyr::mutate(treatment = as.factor(treatment))
+```
+
+\pagebreak 
+
+### Exercise #3: Add 100 to the `x1 column`
+
+```{r exercise_3}
+#| echo: true
+
+data %>%
+  dplyr::mutate(x1 = as.integer(x1)) %>%
+  dplyr::mutate(x1 = x1 + 100)
+  
+```
+
+\pagebreak 
+
+### Exercise #4: Write the code for exercises 1 - 3 as one piece of code 
+
+```{r exercise_4}
+#| echo: true
+
+data %>%
+  dplyr::mutate(x1 = as.integer(x1),
+                treatment = as.factor(treatment)) %>%
+  dplyr::mutate(x1 = x1 + 100)
+  
+```
+
+\pagebreak 
+
+### Exercise #5: Store the output from your code in exercise 5 in a new variable called `data2` 
+
+```{r exercise_5}
+#| echo: true
+
+data2 <- data %>%
+  dplyr::mutate(x1 = as.integer(x1),
+                treatment = as.factor(treatment)) %>%
+  dplyr::mutate(x1 = x1 + 100)
+
+# Show the output of `data2` 
+data2
+```
+
+\pagebreak 
+
+### Exercise #6: Using 'data2', add a new column called 'x3' which contains the sum of 'x1' + 'x2', and then calculate the mean and standard deviation of 'x3' for each of the control/treatment groups 
+
+```{r exercise_6}
+#| echo: true
+
+data2 %>%
+  dplyr::mutate(x3 = x1 + x2) %>%
+  dplyr::group_by(treatment) %>%
+  dplyr::summarise(
+    mean_treat = mean(x3),
+    sd_treat = sd(x3)
+  )
+  
+```
+
+\pagebreak 
+
+### Exercise #7: Using 'data2', select only the 'treatment' and 'x2' columns, and then keep only the rows == 11, 12 and 13  
+
+```{r exercise_7a}
+#| echo: true
+
+# Two options: using greater than operator 
+data2 %>%
+  dplyr::select(treatment, x2) %>%
+  dplyr::filter(x2 > 10)
+```
+
+
+```{r exercise_7b}
+#| echo: true
+
+# Two options: using %in% 
+data2 %>%
+  dplyr::select(treatment, x2) %>%
+  dplyr::filter(x2 %in% c(11, 12, 13))
+```
+
+
+
+

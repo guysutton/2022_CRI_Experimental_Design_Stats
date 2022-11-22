@@ -1,0 +1,447 @@
+---
+title: "07 - Logistic models"
+author: "Guy F. Sutton"
+institute: "Centre for Biological Control<br>Rhodes University, South Africa<Br>Email: g.sutton@ru.ac.za"
+format: 
+  revealjs:
+    # incremental: true
+    logo: images/cbc_logo_full.jpg
+    # footer: "`emitanaka.org/slides/toronto2022`"
+    slide-number: true
+editor: source
+execute:
+  cache: true
+---
+
+## Binary/Proportion data 
+
+```{r}
+#| echo: false
+#| eval: true
+
+################
+# Session setup 
+################
+
+# Use package manager to check, install and load required packages
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  # List the packages you need below
+  tidyverse,
+  glmmTMB,
+  DHARMa
+)
+
+# Change ggplot theme
+theme_set(
+  theme_classic() +
+    theme(
+      panel.border = element_rect(colour = "black",
+                                  fill = NA),
+      axis.text = element_text(colour = "black"),
+      axis.title.x = element_text(margin = unit(c(2, 0, 0, 0),
+                                                "mm")),
+      axis.title.y = element_text(margin = unit(c(0, 4, 0, 0),
+                                                "mm")),
+      legend.position = "none"
+    )
+)
+```
+
+::: {.incremental}
+::: {style="font-size: 0.75em"}
+- Another set of common data types in ecology and agriculture are binomial and proportion data
+  + Binomial data: There are only two categorical levels (e.g. dead/alive, present/absent, infected/healthy)
+  + Proportion data: Any data in the range of [0,1] (e.g. Proportion of insects that survived or emerged)
+
+- The Gaussian and Poisson/NB GLM analyses are completely in appropriate for analysing these data
+:::
+:::
+
+---
+  
+## An example 
+
+- Let's assume we are performing surveys to look at whether FCM is present or absent (`present`) from orchards sampled across an latitudinal gradient (`altitude`). 
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| fig-align: center
+
+# Simulate data to visualise logit vs probit GLM's
+conc <- c(0.02, 0.45, 0.46, 0.50, 0.78, 0.80, 0.80, 0.92, 0.93, 1.00, 1.16, 1.17, 1.17, 1.48,1.51, 1.55, 1.88, 1.90, 2.02)
+dead <- c(0, 0,  0,  0,  0,  0,  0,  0,  0,  1,  7, 11, 4, 
+          14, 14, 12, 12, 18, 17)
+survive <- c(15, 16, 15, 15, 15, 16, 14, 14, 10, 15, 12,  5, 12,  
+             0,  1,  3,  0,  0,  0)
+total <- c(15, 16, 15, 15, 15, 16, 14, 14, 10, 16, 19, 16, 16, 14, 
+           15, 15, 12, 18, 17)
+perc <- c(1.00, 1.00, 1.00, 1.00, 1.00,1.00, 1.00, 1.00, 1.00, 0.94, 0.63, 
+          0.31,0.75,0.00, 0.07, 0.20, 0.00, 0.00,0.00)
+present <- c(1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0 , 0)
+data <- data.frame(conc, dead, survive, total, perc, present)
+data$prop = with(data, dead/total) 
+data <- data %>%
+  dplyr::mutate(altitude = conc * 1000)
+
+data %>%
+  ggplot(data = ., aes(x = altitude,
+                       y = present)) +
+  geom_point(size = 3) +
+  labs(x = "Altitude",
+       y = "FCM presence/absence") +
+  scale_y_continuous(limits = c(0, 1),
+                     breaks = seq(0, 1, 1))
+```
+
+---
+
+## Gaussian GLM 
+
+::: {.panel-tabset}
+
+### Prediction 
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-width: 8
+#| fig-height: 5
+#| fig-align: center
+
+# Fit Gaussian GLM model 
+mod1 <- glm(present ~ altitude, data = data, family = gaussian(link = "identity"))
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod1,
+    terms = c("altitude"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(altitude = x)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = altitude, y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.2) +
+  geom_point(data = data, 
+             aes(x = altitude, y = present), 
+             size = 3) +
+  labs(
+    x = "Altitude (m)",
+    y = "FCM presence/absence"
+  )
+```
+
+### Code 
+
+```{r}
+#| echo: true
+#| eval: false
+#| fig-width: 8
+#| fig-height: 5
+#| fig-align: center
+
+# Fit Gaussian GLM model 
+mod1 <- glm(present ~ altitude, data = data, family = gaussian(link = "identity"))
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod1,
+    terms = c("altitude"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(altitude = x)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = altitude, y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.2) +
+  geom_point(data = data, 
+             aes(x = altitude, y = present), 
+             size = 3) +
+  labs(
+    x = "Altitude (m)",
+    y = "FCM presence/absence"
+  )
+```
+
+:::
+
+---
+
+## Issues with Gaussian GLM 
+
+::: {.incremental}
+::: {style="font-size: 0.70em"}
+- What is an obvious issue with the Gaussian GLM? 
+  + It makes predictions outside the [0,1] interval 
+  + That doesn't make sense, 1 represents present and 0 represents absent!!! 
+:::
+:::
+  
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-width: 8
+#| fig-height: 4
+#| fig-align: center
+
+# Fit Gaussian GLM model 
+mod1 <- glm(present ~ altitude, data = data, family = gaussian(link = "identity"))
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod1,
+    terms = c("altitude"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(altitude = x)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = altitude, y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.2) +
+  geom_point(data = data, 
+             aes(x = altitude, y = present), 
+             size = 3) +
+  labs(
+    x = "Altitude (m)",
+    y = "FCM presence/absence"
+  )
+```
+  
+---
+
+## Modelling binomial data in `R`
+
+::: {.incremental}
+- There are two basics options for modelling binary/proportion data:
+  1. *Logistic GLM*: This is the default parameterisation in almost every field, except agriculture and toxicology, apparently
+  2. *Probit GLM*: This seems to be much more popular in agriculture. 
+:::
+
+--- 
+
+## Logit vs probit GLM 
+
+::: {.incremental}
+::: {style="font-size: 0.80em"}
+- Any ideas about the difference between the logit vs probit GLM?
+  + Different mathematical formula for calculating the curves 
+  + The results are usually qualitatively similar, very small differences in predictions 
+:::
+:::
+
+. . . 
+
+```{r}
+#| echo: false
+#| eval: true
+#| fig-width: 8
+#| fig-height: 4
+#| fig-align: center
+#| 
+model.results2 = glm(data = data, prop ~ altitude, 
+                    family = binomial(link="probit"), weights = total)
+preddat = data.frame(altitude = seq(0, 2000, 10))
+preddat$pred = predict(model.results2, newdata = preddat, type = "response")
+preddat$pred2 = plogis(predict(model.results2, newdata = preddat))
+ggplot(data, aes(altitude, prop) ) +
+     geom_line(data = preddat, aes(y = pred, color = "Probit GLM")) +
+     geom_line(data = preddat, aes(y = pred2, color = "Logit GLM" )) +
+  labs(x = "Altitude (m)",
+       y = "Probability of FCM presence/absence",
+       colour = "Model") +
+  theme(legend.position = "right")
+```
+
+---
+
+## Model syntax 
+
+::: {.incremental}
+- Assuming our question is: *Is FCM presence/absence [present] effected by altitude [altitude]*? 
+
+1. *Logistic GLM*:
+
+ + `mod_logistic <- glm(present ~ altitude, family = binomial(link = "logit"), data = data)` 
+
+2. *Probit GLM*:
+
+  + `mod_probit <- glm(present ~ altitude, family = binomial(link = "probit"), data = data)` 
+:::
+
+--- 
+
+## Fit the probit GLM 
+
+- Let's fit a probit GLM:
+
+::: {style="font-size: 0.80em"}
+```{r}
+#| echo: true
+#| eval: true
+
+mod_probit <- glm(present ~ altitude, family = binomial(link = "probit"), data = data)
+summary(mod_probit)
+```
+:::
+
+---
+
+## Interpretation 
+
+::: {.incremental}
+::: {style="font-size: 1.0em"}
+- The interpretation of probit GLM co-efficients is very tricky.
+  + Much like the count models, we need to exponentiate the co-efficient to get results back that are interpretable
+  + The difference in exponentiated co-efficients above (increase) or below 1 (decrease) give the change in odds for a 1 unit increase in `x`. 
+:::
+:::
+
+
+---
+
+## Interpretation 
+
+::: {style="font-size: 0.50em"}
+```{r}
+#| echo: true
+#| eval: true
+
+mod_probit <- glm(present ~ altitude, family = binomial(link = "probit"), data = data)
+summary(mod_probit)
+```
+:::
+
+. . . 
+
+::: {.incremental}
+::: {style="font-size: 0.60em"}
+- The coefficient for `altitude` = -0.002 which means that a 1-unit increase in altitude results in a *decrease* in the odds of FCM being recorded. 
+  + If we take `exp = -0.002`, the odds of FCM being recorded at a field site decreases by 0.002% 
+  + If `exp = 0.002`, the odds of FCM being recorded at a field site increases by 0.002%
+:::
+:::
+
+---
+
+## Diagnostics are the same 
+
+::: {style="font-size: 0.60em"}
+- Is this model really a bad fit? 
+  + When sample sizes are small (in this example n = 19), the `Residual vs Fitted` plot will often show issues with non-linearity and/or unequal variances
+:::
+
+```{r}
+#| echo: true
+#| eval: true
+#| results: false
+#| fig-width: 8
+#| fig-height: 4
+#| fig-align: center
+
+DHARMa::simulateResiduals(fittedModel = mod_probit, plot = T)
+```
+
+
+---
+
+## Hypothesis test for `altitude` effect 
+
+- Again, hypothesis testing is the same (i.e. LRT)
+
+```{r}
+#| echo: true
+#| eval: true
+
+mod_null <-  glm(present ~ 1, family = binomial(link = "probit"), data = data)
+anova(mod_null, mod_probit, test = "Chisq")
+```
+
+---
+
+## Plot model predictions 
+
+::: {.panel-tabset}
+
+### Result
+
+```{r}
+#| echo: false
+#| eval: true
+
+# Extract predictions 
+preds <-
+  ggeffects::ggpredict(
+    mod_probit,
+    terms = c("altitude"),
+    type = "fe",
+    interval = "confidence"
+    # interval = "prediction"
+  ) %>%
+  as.data.frame() %>%
+  dplyr::rename(altitude = x)
+
+# Make plot 
+preds %>%
+  ggplot(data = ., aes(x = altitude, y = predicted)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high),
+              alpha = 0.2) +
+  geom_point(data = data, 
+             aes(x = altitude, y = present), 
+             alpha = 0.5) +
+  labs(
+    x = "Altitude (m)",
+    y = "Probability of FCM presence/absence"
+  )
+  
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+
+
